@@ -1,0 +1,87 @@
+import numpy as np
+from datetime import (datetime,date)
+from matplotlib.dates import (datestr2num, num2date)
+import matplotlib.pyplot as plt
+import math
+import tkinter.filedialog
+import tkinter.messagebox
+# Matador 30/07/1971
+# UK 23/07/1963
+# annee = input("Annee:")
+# mois = input("Mois:")
+# jour = input("jour:")
+# CH = input("CH:")
+# CM = input("CM:")
+# CL = input("CL:")
+# A = input("Albedo:")
+annee = 1971
+mois = 7
+jour = 30
+CH =0.1
+CM = 0.1
+CL = 0.1
+A = 0.1
+S0 = 1370
+Date= date(int(annee), int(mois), int(jour))
+time = date(int(annee), int(mois), int(jour)).isoformat()
+timenum = datestr2num(datetime.strptime(time, '%Y-%m-%d').strftime('%d/%m/%Y'))
+test = num2date(timenum)
+lat = math.radians(50.8)
+long = math.radians(-107.951)
+
+Offset = long/(2*np.pi/24)+1
+compte = -1
+w= [0]*(24*60)
+d= [0]*(24*60)
+h= [0]*(24*60)
+UTC= [0]*(24*60)
+Local = [0]*(24*60)
+N = Date.toordinal() - date(Date.year, 1, 1).toordinal() + 1
+for t in np.arange(timenum,timenum+1,(1/(24*60))): 
+    compte = compte + 1
+    UTC[compte]= (t-timenum)*24
+    Local[compte] = (t-timenum)*24+Offset
+    w[compte]=((np.pi*UTC[compte])/12) + long
+    d=0.409*np.sin((2*np.pi*(N-173))/365)
+    h[compte]=np.arcsin((np.sin(lat)*np.sin(d))-(np.cos(lat)*np.cos(d)*np.cos(w[compte])))
+T = [0]*len(h)
+KD = [0]*len(h)
+KU = [0]*len(h)
+L = [0]*len(h)
+Net = [0]*len(h)
+for i in range(0,len(h)):
+    if h[i]>=0:
+        T[i] = (0.6+(0.2*np.sin(h[i])))*(1-(0.4*float(CH)))*(1-(0.7*float(CM)))*(1-(0.4*float(CL)))
+        KD[i] = S0*T[i]*np.sin(h[i])
+        KU[i] = -float(A)*KD[i]
+        L[i] = -97.28*(1-(0.1*float(CH))-(0.3*float(CM))-(0.6*float(CL)))
+        Net[i] = L[i] + KD[i] + KU[i]
+
+# plt.plot(Local,KD)
+# plt.plot(Local,KU)
+# plt.plot(Local,L)
+plt.plot(Local,Net)
+# plt.legend(["KD","KU","L","Net"],fontsize = 15)
+plt.xlabel("Temps",fontsize = 15)
+plt.ylabel("W/m²",fontsize = 15)
+plt.xlim(0,24)
+plt.show()
+fichier_ouv = tkinter.filedialog.askopenfilename(title = " fichier " )
+
+M = np.loadtxt(fichier_ouv, skiprows=4)
+
+t = np.array(M[:, 0])
+KD = np.array(M[:, 1])
+# On asscoie à la variable RH ou humidité (en %) la quatrième colonne du fichier
+KU = np.array(M[:, 2])
+LD = np.array(M[:, 3])
+LU = np.array(M[:, 4])
+Q = np.array(M[:, 5])
+
+# plt.plot(t,KD)
+# plt.plot(t,KU)
+# plt.plot(t,LD)
+# plt.plot(t,LU)
+plt.plot(t,Q)
+# plt.legend(["KD","KU","LD","LU","Q"],fontsize = 15)
+plt.show()
