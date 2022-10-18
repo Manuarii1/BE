@@ -5,39 +5,64 @@ import matplotlib.pyplot as plt
 import math
 import tkinter.filedialog
 import tkinter.messagebox
-# Matador 30/07/1971
-# UK 23/07/1963
-# annee = input("Annee:")
-# mois = input("Mois:")
-# jour = input("jour:")
-# CH = input("CH:")
-# CM = input("CM:")
-# CL = input("CL:")
-# A = input("Albedo:")
-annee = 1971
-mois = 7
-jour = 30
-CH =0.1
-CM = 0.1
-CL = 0.1
-A = 0.1
-S0 = 1370
-Date= date(int(annee), int(mois), int(jour))
-time = date(int(annee), int(mois), int(jour)).isoformat()
-timenum = datestr2num(datetime.strptime(time, '%Y-%m-%d').strftime('%d/%m/%Y'))
-test = num2date(timenum)
-lat = math.radians(50.8)
-long = math.radians(-107.951)
 
-Offset = long/(2*np.pi/24)+1
-compte = -1
-w= [0]*(24*60)
-d= [0]*(24*60)
-h= [0]*(24*60)
-UTC= [0]*(24*60)
-Local = [0]*(24*60)
-N = Date.toordinal() - date(Date.year, 1, 1).toordinal() + 1
-for t in np.arange(timenum,timenum+1,(1/(24*60))): 
+#-------------------------------------INFO----------------------
+# UK 23/07/1963 ; long = -0.355°W ; lat = 51.809°N 
+# Matador 30/07/1971 ; long = -107.951° ; lat = 50.800° 
+# Lake Ontario, Grimsby, Ontario 28/08/1969 ; lat = 43.200°N
+# Rothamsted, UK 23/07/1963 ; lat = 51.809°N ; long = -0.355°W
+# Cedar River. Washington 10/08/1972 ; lat = 47.473°N ; long = -122.162°W
+
+annee = 1972
+mois = 8
+jour = 10
+
+Latitude = 47.473
+Longitude = -122.162
+
+#----------------------------Ouverture des données exp-----------------------
+
+fichier_ouv = tkinter.filedialog.askopenfilename(title = " fichier " )
+
+M = np.loadtxt(fichier_ouv, skiprows=4)
+
+texp = np.array(M[:, 0])
+KDexp = np.array(M[:, 1])
+KUexp = np.array(M[:, 2])
+LDexp = np.array(M[:, 3])
+LUexp = np.array(M[:, 4])
+Qexp = np.array(M[:, 5])
+
+#-----------------------------Paramètres du modèle--------------------------
+CH =0.1 # cloud cover (0-1) for high level clouds
+CM = 0.01 # cloud cover (0-1) for middle level clouds
+CL = 0.1 #  cloud cover (0-1) for low level clouds
+I = np.where(texp==12) # Cherche l'indice de 12h
+A = -KUexp[I[0]]/KDexp[I[0]] #Calcul de l'albedo à 12h loacle à partir des données exp
+# moins empiriques !                                  
+S0 = 1370 # Constantes solaires dans l'espace
+Date= date(int(annee), int(mois), int(jour)) # Format des dates
+time = date(int(annee), int(mois), int(jour)).isoformat() # Autre Format Date
+timenum = datestr2num(datetime.strptime(time, '%Y-%m-%d').strftime('%d/%m/%Y'))
+# Calcul du temps numérique, nombre de jours depuis le 01/01/1970
+
+lat = math.radians(Latitude) # latitude en radians !
+long = math.radians(Longitude) # longitude en radians !
+
+Offset = long/(2*np.pi/24) # Offset représentant le décalage temporel entre 
+# le temps universel UTC et le temps local d'une position définit !
+compte = -1 # Ca servira à créer une liste pour les données
+w= [0]*(2*24*60)
+d= [0]*(2*24*60) # Initialisation des listes ou tableaux de données
+h= [0]*(2*24*60)
+UTC= [0]*(2*24*60)
+Local = [0]*(2*24*60)
+N = Date.toordinal() - date(Date.year, 1, 1).toordinal() + 1 # Nombre de jour
+# passé depuis le 1er janvier d'une année.
+
+#-------------------------------Calcul du modèle-----------------------------
+
+for t in np.arange(timenum,timenum+2,(1/(24*60))): 
     compte = compte + 1
     UTC[compte]= (t-timenum)*24
     Local[compte] = (t-timenum)*24+Offset
@@ -57,31 +82,20 @@ for i in range(0,len(h)):
         L[i] = -97.28*(1-(0.1*float(CH))-(0.3*float(CM))-(0.6*float(CL)))
         Net[i] = L[i] + KD[i] + KU[i]
 
-# plt.plot(Local,KD)
-# plt.plot(Local,KU)
-# plt.plot(Local,L)
+#----------------------------------Affichage----------------------------------
+
+plt.plot(Local,KD)
+plt.plot(Local,KU)
+plt.plot(Local,L)
 plt.plot(Local,Net)
-# plt.legend(["KD","KU","L","Net"],fontsize = 15)
 plt.xlabel("Temps",fontsize = 15)
 plt.ylabel("W/m²",fontsize = 15)
 plt.xlim(0,24)
 plt.show()
-fichier_ouv = tkinter.filedialog.askopenfilename(title = " fichier " )
 
-M = np.loadtxt(fichier_ouv, skiprows=4)
-
-t = np.array(M[:, 0])
-KD = np.array(M[:, 1])
-# On asscoie à la variable RH ou humidité (en %) la quatrième colonne du fichier
-KU = np.array(M[:, 2])
-LD = np.array(M[:, 3])
-LU = np.array(M[:, 4])
-Q = np.array(M[:, 5])
-
-# plt.plot(t,KD)
-# plt.plot(t,KU)
-# plt.plot(t,LD)
-# plt.plot(t,LU)
-plt.plot(t,Q)
-# plt.legend(["KD","KU","LD","LU","Q"],fontsize = 15)
+plt.plot(texp,KDexp)
+plt.plot(texp,KUexp)
+plt.plot(texp,(LDexp+LUexp))
+plt.plot(texp,Qexp)
+plt.legend(["KD","KU","L","Net","KDexp","KUexp","Lexp","Netexp"],fontsize = 15)
 plt.show()
