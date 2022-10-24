@@ -9,7 +9,7 @@ import tkinter.messagebox
 #-------------------------------------INFO----------------------
 # UK 23/07/1963 ; long = -0.355°W ; lat = 51.809°N 
 # Matador 30/07/1971 ; long = -107.951° ; lat = 50.800° 
-# Lake Ontario, Grimsby, Ontario 28/08/1969 ; lat = 43.200°N ; long = -79.561630
+# Lake Ontario, Grimsby, Ontario 28/08/1969 ; lat = 43.200°N ; long = -79.561630 UTC-5
 # Mizuho Station, Antarctica 13/11/1979 ; lat = 70.698°S ; long = 44.332°E UTC+3
 # Cedar River. Washington 10/08/1972 ; lat = 47.473°N ; long = -122.162°W
 
@@ -38,7 +38,7 @@ LUexp = np.array(M[:, 4])
 Qexp = np.array(M[:, 5])
 
 #-----------------------------Paramètres du modèle--------------------------
-CH =0.1 # cloud cover (0-1) for high level clouds
+CH =0.01 # cloud cover (0-1) for high level clouds
 CM = 0.01 # cloud cover (0-1) for middle level clouds
 CL = 0.01 #  cloud cover (0-1) for low level clouds
 I = np.where(texp==12) # Cherche l'indice de 12h
@@ -73,7 +73,7 @@ for t in np.arange(timenum-1,timenum+2,(1/(24*60))):
     Local[compte] = (t-timenum)*24+Offset
     
     w[compte]=((np.pi*(UTC[compte]))/12) + long
-    d=0.409*np.sin((2*np.pi*(N-81))/365)
+    d=0.409*np.cos((2*np.pi*(N-173))/365)
     h[compte]=np.arcsin((np.sin(lat)*np.sin(d))-(np.cos(lat)*np.cos(d)*np.cos(w[compte])))
     dh[compte] = math.degrees(h[compte])
 T = [0]*len(h)
@@ -113,3 +113,4 @@ plt.plot(texp,Qexp,'--')
 plt.grid()
 plt.legend(["KD","KU","L","Net","KDexp","KUexp","Lexp","Netexp"],fontsize = 15)
 plt.show()
+
