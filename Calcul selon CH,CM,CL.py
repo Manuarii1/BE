@@ -8,10 +8,23 @@ import tkinter.filedialog
 import tkinter.messagebox
 from IPython import get_ipython
 get_ipython().run_line_magic('matplotlib', 'qt5')
+fichier_ouv = tkinter.filedialog.askopenfilename(title = " fichier " )
+
+M = np.loadtxt(fichier_ouv, skiprows=4)
+
+texp = np.array(M[:, 0])
+KDexp = np.array(M[:, 1])
+KUexp = np.array(M[:, 2])
+# Lexp = np.array(M[:,3])
+# Qexp = np.array(M[:, 4])
+LDexp = np.array(M[:, 3])
+LUexp = np.array(M[:, 4])
+Qexp = np.array(M[:, 5])
+
 
 # Boucle pour tester les valeurs selon les variables
 #-------------------------------------INFO----------------------
-# Mizuho Station, Antarctica (-70.4157°N -44,1645°W) 13/11/1979
+# Mizuho Station, Antarctica (70.4157°N 44,1645°E) 13/11/1979
 # Matador, Saskatchewan 30/07/1971 (50.800°N -107.951°W)
 # Lake Ontario, Grimsby, Ontario 28/08/1969 (43.200°N -79.550°W)
 # Rothamsted, UK 23/07/1963 (51.809°N -0.355°W)
@@ -28,7 +41,9 @@ Longitude = -122.162
 
 
 resultCH, resultCM, resultCL = np.zeros(11), np.zeros(11), np.zeros(11)
+resultCH_2, resultCM_2, resultCL_2 = np.zeros(11), np.zeros(11), np.zeros(11)
 
+I = np.where(KDexp==max(KDexp)) # Cherche l'indice de 12h
 A = -KUexp[I[0]]/KDexp[I[0]] #Calcul de l'albedo à 12h locale à partir des données exp
 # moins empiriques !                                  
 S0 = 1370 # Constantes solaires dans l'espace
@@ -46,8 +61,8 @@ Offset = long/(2*np.pi/24) # Offset représentant le décalage temporel entre
 for malek in range(0,11,1):
     #-----------------------------Paramètres du modèle--------------------------
     CH = malek/10 # cloud cover (0-1) for high level clouds
-    CM = 0.01 # cloud cover (0-1) for middle level clouds
-    CL = 0.1 #  cloud cover (0-1) for low level clouds
+    CM = 0 # cloud cover (0-1) for middle level clouds
+    CL = 0 #  cloud cover (0-1) for low level clouds
     compte = -1 # Ca servira à créer une liste pour les données
     w= [0]*(2*24*60)
     d= [0]*(2*24*60) # Initialisation des listes ou tableaux de données
@@ -77,15 +92,17 @@ for malek in range(0,11,1):
             KU[i] = -float(A)*KD[i]
             L[i] = -97.28*(1-(0.1*float(CH))-(0.3*float(CM))-(0.6*float(CL)))
             Net[i] = L[i] + KD[i] + KU[i]
-            
-    resultCH[malek]= Net[2*12*60]
+    P = np.where(L==min(L))
+    resultCH[malek]= L[0]
+    P = np.where(Net==max(Net))
+    resultCH_2[malek]= Net[P[0][0]]
 
 
 for malek in range(0,11,1):
     #-----------------------------Paramètres du modèle--------------------------
-    CH = 0.1 # cloud cover (0-1) for high level clouds
+    CH = 0 # cloud cover (0-1) for high level clouds
     CM = malek/10 # cloud cover (0-1) for middle level clouds
-    CL = 0.1 #  cloud cover (0-1) for low level clouds
+    CL = 0 #  cloud cover (0-1) for low level clouds
     A = -KUexp[I[0]]/KDexp[I[0]] #Calcul de l'albedo à 12h locale à partir des données exp
     # moins empiriques !                                  
     S0 = 1370 # Constantes solaires dans l'espace
@@ -128,14 +145,16 @@ for malek in range(0,11,1):
             KU[i] = -float(A)*KD[i]
             L[i] = -97.28*(1-(0.1*float(CH))-(0.3*float(CM))-(0.6*float(CL)))
             Net[i] = L[i] + KD[i] + KU[i]
-            
-    resultCM[malek]= Net[2*12*60]
+    P = np.where(L==min(L))        
+    resultCM[malek]= L[0]
+    P = np.where(Net==max(Net))
+    resultCM_2[malek]= Net[P[0][0]]
 
 
 for malek in range(0,11,1):
     #-----------------------------Paramètres du modèle--------------------------
-    CH = 0.1 # cloud cover (0-1) for high level clouds
-    CM = 0.01 # cloud cover (0-1) for middle level clouds
+    CH = 0 # cloud cover (0-1) for high level clouds
+    CM = 0 # cloud cover (0-1) for middle level clouds
     CL = malek/10 #  cloud cover (0-1) for low level clouds
     A = -KUexp[I[0]]/KDexp[I[0]] #Calcul de l'albedo à 12h locale à partir des données exp
     # moins empiriques !                                  
@@ -179,8 +198,10 @@ for malek in range(0,11,1):
             KU[i] = -float(A)*KD[i]
             L[i] = -97.28*(1-(0.1*float(CH))-(0.3*float(CM))-(0.6*float(CL)))
             Net[i] = L[i] + KD[i] + KU[i]
-            
-    resultCL[malek]= Net[2*12*60]
+    P = np.where(L==min(L))       
+    resultCL[malek]= L[0]
+    P = np.where(Net==max(Net))
+    resultCL_2[malek]= Net[P[0][0]]
     
 x = np.arange(0,11,1)/10
 print(x)
@@ -188,7 +209,16 @@ plt.plot(x,resultCH)
 plt.plot(x,resultCM)
 plt.plot(x,resultCL)
 plt.xlabel("cloud cover",fontsize = 15)
+plt.ylabel("L net W/m²",fontsize = 15)
+plt.legend(["high level clouds","medium level clouds","low level clouds"],fontsize = 8)
+plt.title(f"L net flux depending on the cloud cover (0-1) \n {nom} \n midday")
+plt.show()
+plt.figure()
+plt.plot(x,resultCH_2)
+plt.plot(x,resultCM_2)
+plt.plot(x,resultCL_2)
+plt.xlabel("cloud cover",fontsize = 15)
 plt.ylabel("Net W/m²",fontsize = 15)
 plt.legend(["high level clouds","medium level clouds","low level clouds"],fontsize = 8)
-plt.title("Net flux depending on the cloud cover (0-1) \n Cedar River Washington 10/08/1972 (47.473°N -122.162°W) \n midday")
+plt.title(f"Net flux depending on the cloud cover (0-1) \n {nom} \n midday")
 plt.show()
